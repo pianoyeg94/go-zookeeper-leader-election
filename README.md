@@ -17,13 +17,13 @@
 package main
 
 import (
-	"context"
-	"flag"
-	"fmt"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
+    "context"
+    "flag"
+    "fmt"
+    "log"
+    "os"
+    "os/signal"
+    "syscall"
     "time"
 
     leaderelection "github.com/pianoyeg94/go-zookeeper-leader-election"
