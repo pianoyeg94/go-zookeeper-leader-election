@@ -37,13 +37,13 @@ const (
 )
 
 var (
-	id      int64
-	servers = [...]string{"localhost:22181", "localhost:22182", "localhost:22183"}
+    id      int64
+    servers = [...]string{"localhost:22181", "localhost:22182", "localhost:22183"}
 )
 
 func init() {
-	flag.Int64Var(&id, "id", 1, "zookeeper client id")
-	flag.Parse()
+    flag.Int64Var(&id, "id", 1, "zookeeper client id")
+    flag.Parse()
 }
 
 func main() {
@@ -57,8 +57,8 @@ func main() {
 
     go func() {
         defer close(errs)
-		errs <- election.Run(NewLeader("I'm leading"), leaderelection.FollowerRoutine(followerRoutine))
-	}()
+        errs <- election.Run(NewLeader("I'm leading"), leaderelection.FollowerRoutine(followerRoutine))
+    }()
 
     sig := make(chan os.Signal, 1)
     signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
@@ -80,24 +80,24 @@ type Leader struct {
 
 func (l *Leader) Lead(ctx context.Context, _ *zk.Conn) error {
     for {
-		select {
-		case <-time.After(1 * time.Second):
-			log.Println(l.msg)
-		case <-ctx.Done():
-			return nil
-		}
-	}
+        select {
+        case <-time.After(1 * time.Second):
+            log.Println(l.msg)
+        case <-ctx.Done():
+            return nil
+        }
+    }
 }
 
 func followerRoutine(ctx context.Context, _ *zk.Conn) error {
     for {
-		select {
-		case <-time.After(1 * time.Second):
-			log.Println("I'm following")
-		case <-ctx.Done():
-			return nil
-		}
+	select {
+	case <-time.After(1 * time.Second):
+            log.Println("I'm following")
+	case <-ctx.Done():
+            return nil
 	}
+    }
 }
 ```
 
