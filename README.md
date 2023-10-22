@@ -47,7 +47,7 @@ func init() {
 }
 
 func main() {
-    election := leaderelection.NewLeaderElection(id, namespace, servers[:], sesssionTimeout)
+    election := leaderelection.NewLeaderElection(id, namespace, servers[:], sessionTimeout)
 
     errs := make(chan error, 1)
     defer func() { 
