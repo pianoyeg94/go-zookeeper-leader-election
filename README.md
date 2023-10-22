@@ -61,13 +61,13 @@ func main() {
 	}()
 
     sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+    signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
     select {
-	case err := <-errs:
-		log.Fatalf("Got fatal error from leader election, exiting: %w", err)
-	case <-sig:
-		election.Resign()
-	}
+    case err := <-errs:
+        log.Fatalf("Got fatal error from leader election, exiting: %w", err)
+    case <-sig:
+        election.Resign()
+    }
 }
 
 func NewLeader(msg string) *Leader {
