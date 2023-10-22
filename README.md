@@ -78,7 +78,7 @@ type Leader struct {
     msg string
 }
 
-func (l *leader) Lead(ctx context.Context, _ *zk.Conn) error {
+func (l *Leader) Lead(ctx context.Context, _ *zk.Conn) error {
     for {
 		select {
 		case <-time.After(1 * time.Second):
