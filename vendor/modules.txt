@@ -1,0 +1,6 @@
+# github.com/go-zookeeper/zk v1.0.3
+## explicit; go 1.13
+github.com/go-zookeeper/zk
+# github.com/google/uuid v1.3.1
+## explicit
+github.com/google/uuid
