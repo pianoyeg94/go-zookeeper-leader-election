@@ -121,7 +121,7 @@ func run(ctx context.Context) error {
 
 	go func() {
 		defer close(errs)
-		errs <- election.Run(NewLeader("I'm leading"), leaderelection.FollowerRoutine(followerRoutine))
+		errs <- election.Join(NewLeader("I'm leading"), leaderelection.FollowerRoutine(followerRoutine))
 	}()
 
 	select {

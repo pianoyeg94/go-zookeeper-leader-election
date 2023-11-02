@@ -84,7 +84,7 @@ type LeaderElection struct {
 	resignWg  sync.WaitGroup
 }
 
-func (e *LeaderElection) Run(leader Leader, follower Follower) error {
+func (e *LeaderElection) Join(leader Leader, follower Follower) error {
 	e.resignWg.Add(1)
 	defer e.resignWg.Done()
 
@@ -107,6 +107,13 @@ joinElection:
 			return err
 		}
 
+		if sessionId, err = e.maybeLostSession(sessionId); err != nil {
+			if err == ErrZKLostSession {
+				continue joinElection
+			}
+			return err
+		}
+
 		var candidates []string
 		switch candidates, sessionId, err = e.getCandidates(sessionId); err {
 		case ErrZKLostSession, zk.ErrNoNode, ErrZKNoChildren:
@@ -118,20 +125,27 @@ joinElection:
 		}
 
 		for !ctxt.ContextDone(e.resignCtx) {
+			if sessionId, err = e.maybeLostSession(sessionId); err != nil {
+				if err == ErrZKLostSession {
+					continue joinElection
+				}
+				return err
+			}
+
 			if e.hasAcquiredLeadership(candidates) {
 				if sessionId, err = e.executeLeaderScenario(sessionId, leader); err == nil || err == ErrZKLostSession {
 					continue joinElection
 				}
 				return err
-			} else {
-				switch sessionId, err = e.executeFollowerScenario(sessionId, candidates, follower); err {
-				case nil:
-					candidates = []string{e.candidateId}
-				case ErrZKLostSession:
-					continue joinElection
-				default:
-					return err
-				}
+			}
+
+			switch sessionId, err = e.executeFollowerScenario(sessionId, candidates, follower); err {
+			case nil:
+				candidates = []string{e.candidateId}
+			case ErrZKLostSession:
+				continue joinElection
+			default:
+				return err
 			}
 		}
 	}
@@ -514,6 +528,31 @@ setWatch:
 	}
 
 	return sessionId, candidates, nil
+}
+
+func (e *LeaderElection) maybeLostSession(sessionId int64) (int64, error) {
+	for {
+		select {
+		case event, ok := <-e.sessionEvents:
+			if !ok || ctxt.ContextDone(e.resignCtx) {
+				return invalidSessionId, ErrResign
+			}
+
+			switch event.sessionStatus {
+			case sessionStatusDisconnected, sessionStatusLost:
+				return e.waitSessionReacquire(sessionId)
+			case sessionStatusAcquired, sessionStatusReacquired:
+				if event.sessionId == sessionId {
+					return event.sessionId, ErrZKLostSession
+				}
+				return sessionId, nil
+			}
+		case <-e.resignCtx.Done():
+			return invalidSessionId, ErrResign
+		default:
+			return sessionId, nil
+		}
+	}
 }
 
 func (e *LeaderElection) waitSessionReacquire(sessionId int64) (int64, error) {
