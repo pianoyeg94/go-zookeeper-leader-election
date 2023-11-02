@@ -6,7 +6,7 @@ You can experiment by taking some of the main.go instances down and observing th
 
 #### Battle tested in production environments, BUT still LACKING:
 - Excessive unit and integration test coverage, especially for corner cases;
-- Comments and documentation;
+- Comments and documentation (though the example of usage bellow is in itself a self-contained API documentation);
 - Monitoring and logging hooks (callbacks).
 
 #### docker-compose.yaml
