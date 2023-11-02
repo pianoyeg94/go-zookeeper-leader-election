@@ -163,11 +163,8 @@ joinElection:
 func (e *LeaderElection) Resign() {
 	e.resignFn()
 	e.resignWg.Wait()
-
-	_ = e.conn.Delete(e.candidatePath, 0)
 	e.conn.Close()
 	e.waitResigned()
-
 	if e.sessionEvents != nil {
 		close(e.sessionEvents)
 	}
