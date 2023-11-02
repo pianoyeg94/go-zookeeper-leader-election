@@ -24,10 +24,13 @@ const (
 	flagEphemeralSequential = zk.FlagEphemeral | zk.FlagSequence
 
 	electionResource = "election"
+	serversResource  = "servers"
 	protectedPrefix  = "_c_"
 )
 
 var (
+	ErrTmpltServerAlreadyRegistered = "leaderelection: server with id %d already registered"
+
 	ErrResign = errors.New("leaderelection: resigned")
 
 	ErrZKNoSession   = errors.New("zk: no session")
@@ -100,6 +103,10 @@ joinElection:
 			if err == zk.ErrNoNode {
 				continue joinElection
 			}
+			return err
+		}
+
+		if sessionId, err = e.registerServer(sessionId); err != nil {
 			return err
 		}
 
@@ -256,6 +263,43 @@ func (e *LeaderElection) maybeInitializeElection(sessionId int64) (int64, error)
 	}
 
 	return sessionId, nil
+}
+
+func (e *LeaderElection) registerServer(sessionId int64) (int64, error) {
+	path := path.Join(e.namespace, serversResource, strconv.Itoa(int(e.id)))
+createServerIdNode:
+	for !ctxt.ContextDone(e.resignCtx) {
+		switch _, err := e.conn.Create(path, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll)); err {
+		case nil:
+			return sessionId, nil
+		case zk.ErrNodeExists:
+			for !ctxt.ContextDone(e.resignCtx) {
+				switch _, stats, err := e.conn.Get(path); err {
+				case zk.ErrNoNode:
+					continue createServerIdNode
+				case nil:
+					if stats.EphemeralOwner != sessionId {
+						return invalidSessionId, fmt.Errorf(ErrTmpltServerAlreadyRegistered, e.id)
+					}
+					return sessionId, nil
+				case zk.ErrSessionExpired, zk.ErrAuthFailed, zk.ErrConnectionClosed, zk.ErrNoServer:
+					if sessionId, err = e.waitSessionReacquire(sessionId); err == ErrResign {
+						return invalidSessionId, err
+					}
+				default:
+					return invalidSessionId, err
+				}
+			}
+		case zk.ErrSessionExpired, zk.ErrAuthFailed, zk.ErrConnectionClosed, zk.ErrNoServer:
+			if sessionId, err = e.waitSessionReacquire(sessionId); err == ErrResign {
+				return invalidSessionId, err
+			}
+		default:
+			return invalidSessionId, err
+		}
+	}
+
+	return invalidSessionId, ErrResign
 }
 
 func (e *LeaderElection) makeCandidateOffer(sessionId int64) (int64, error) {
