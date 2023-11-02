@@ -5,11 +5,9 @@ This package is intended to be used with serveral instances, so that it can prov
 You can experiment by taking some of the main.go instances down and observing that the leadership transfers correctly from one instance to another. You can also shut down 2 of the zookeeper instances, to see that the main.go services will keep trying to reconnect. As soon as you bring at least another zookeeper instance up to form a quorum, the main.go services will restore their session and proceed with their leader and follower activities.
 
 #### Battle tested in production environments, BUT still LACKING:
-- Excessive test coverage, especially for corner cases;
+- Excessive unit and integration test coverage, especially for corner cases;
 - Comments and documentation;
 - Monitoring and logging hooks (callbacks).
-
-Currently use this only at your own risk.
 
 #### docker-compose.yaml
 ```yaml
